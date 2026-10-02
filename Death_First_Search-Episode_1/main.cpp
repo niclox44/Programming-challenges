@@ -91,7 +91,7 @@ class Grafo {
                     std::reverse(recorrido.begin(), recorrido.end());
                     return recorrido;
 
-                };
+                }
 
                 for(const auto vecinos: adyacencia_[actual]){
                     if(!visitado[vecinos]){
