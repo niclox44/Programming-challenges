@@ -23,7 +23,7 @@ class Graph{
         adjacency_[origin].push_back(destiny);
 
         if(!directed_){
-            adjacency_[destiny].push_back(origin);
+            adjacency_[destiny].push_back(origin)
         }
     }
 
