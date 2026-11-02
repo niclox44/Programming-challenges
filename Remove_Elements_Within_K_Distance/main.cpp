@@ -18,11 +18,12 @@ string rtrim(const string &);
 
 int debounceTimestamps(vector<int> timestamps, int K) {
     
-    int count = 0;
+    int count = 1;
     long number = timestamps[0];
-    
-    for(int i=1; i<timestamps.size(); i++)
+    cout << timestamps.size();
+    for(size_t i=1; i<timestamps.size(); i++)
     {
+        cout << static_cast<long>(timestamps[i]-number) << endl;
         if(static_cast<long>(timestamps[i]-number) >= K)
         {
             number = timestamps[i];
@@ -46,7 +47,7 @@ int main()
         string timestamps_item_temp;
         cin >> timestamps_item_temp;
 
-        int timestamps_item = stoi(ltrim(rtrim(timestamps_item_temp)));
+        int timestamps_item = stoi(timestamps_item_temp);
 
         timestamps[i] = timestamps_item;
     }
@@ -54,7 +55,7 @@ int main()
     string K_temp;
     cin >> K_temp;
 
-    int K = stoi(ltrim(rtrim(K_temp)));
+    int K = stoi(K_temp);
 
     int result = debounceTimestamps(timestamps, K);
 
@@ -63,24 +64,3 @@ int main()
     return 0;
 }
 
-string ltrim(const string &str) {
-    string s(str);
-
-    s.erase(
-        s.begin(),
-        find_if(s.begin(), s.end(), not1(ptr_fun<int, int>(isspace)))
-    );
-
-    return s;
-}
-
-string rtrim(const string &str) {
-    string s(str);
-
-    s.erase(
-        find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(),
-        s.end()
-    );
-
-    return s;
-}
