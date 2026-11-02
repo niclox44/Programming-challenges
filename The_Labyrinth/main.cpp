@@ -6,84 +6,48 @@
 
 using namespace std;
 
-class Graph{
-    public:
-    using Vertex = std::size_t;
 
-    //Constructor
-    explicit Graph(std::size_t quantity, bool directed)
-        : adjacency_(quantity), directed_(directed){}
+/**
+ * Auto-generated code below aims at helping you parse
+ * the standard input according to the problem statement.
+ **/
 
-    Vertex addVertex(){
-        adjacency_.emplace_back();
-        return adjacency_.size() - 1;
-    }
-
-    void addEdge(Vertex origin, Vertex destiny){
-        adjacency_[origin].push_back(destiny);
-
-        if(!directed_){
-            adjacency_[destiny].push_back(origin)
-        }
-    }
-
-    const std::vector<Vertex>& getNeighbors(Vertex node) const{
-        return adjacency_[node];
-    }
-
-    std::vector<Vertex> bfs(Vertex origin, Vertex destiny) const{
-        
-        std::queue<Vertex> frontier;
-        std::vector<bool> visited(adjacency_.size(), false);
-        std::vector<Vertex> father(adjacency_.size());
-        std::vector<Vertex> path;
+// STAGE 1 == EXPLORING. 
+// STAGE 2 == GOING TO C. Only can be in this stage in case of dist(c,t) <= a;
+// STAGE 3 == GOINT TO T
 
 
-        visited[0] = true;
-        frontier.push(origin);
-
-        while(!frontier.empty())
-        {
-            const auto current = frontier.front();
-            frontier.pop();
-            
-            if(current == destiny){
-                
-                for(Vertex nodo = destiny;
-                    nodo != origin;
-                    nodo = father[nodo])
-                {
-                    path.push_back(nodo);
-                }
-
-                std::reverse(path.begin(), path.end());
-                return path;
-            }
-
-            for(const auto neighbor: adjacency_[current])
-            {
-                if(!visited[neighbor]){
-                    visited[neighbor] = true;
-                    frontier.push(neighbor);
-                    father[neighbor] = current;
-                }
-            }
-            
-        }
-        return {};
-    }
 
 
-    private:
-    std::vector<std::vector<Vertex>> adjacency_;
-    bool directed_;
+
+struct Position{
+    int row;
+    int column;
 };
 
-bool areAllVisited(std::vector<bool> v){
-    for(auto is: v){
-        if(!is) return false;
+//Devulve la distancia de un punto a otro punto con una matriz de padres ya creada
+//Nos ahorramos el BFS de nuevo.
+
+int calcDist(vector<vector<Position>> fathers, Position C, Position T)
+{
+    Position prev = C;
+    int dist = 0;
+
+    while(true)
+    {
+        if(fathers[prev.row][prev.column].row == T.row &&
+            fathers[prev.row][prev.column].column == T.column
+        )
+        {
+            dist++;
+            break;
+        }
+        prev = fathers[prev.row][prev.column];
+        dist++;
     }
-    return true;
+
+    return dist;
+    
 }
 
 int main()
@@ -93,49 +57,101 @@ int main()
     int a; // number of rounds between the time the alarm countdown is activated and the time the alarm goes off.
     cin >> r >> c >> a; cin.ignore();
 
+    // This are used in case we are going to C or T;
+    bool goForward = 1;
+
+    Position tPosition = {-1,-1}; //T position for the first input;
+    vector<string> map(r); //Map of the labyrinth
+    string move; //RIGHT, LEFT, UP or DOWN
+
     // game loop
     while (1) {
+
+        bool stage1 = true;
+        bool stage2 = false;
+        bool stage3 = false;
+
         int kr; // row where Rick is located.
         int kc; // column where Rick is located.
-        std::vector<string> labyrinth;
         cin >> kr >> kc; cin.ignore();
-        for (int i = 0; i < r; i++) {
-            string row; // C of the characters in '#.TC?' (i.e. one line of the ASCII maze).
-            cin >> row; cin.ignore();
-            labyrinth.push_back(row);
-        }
-
-        Graph graph = Graph(r*c, false);
-        std::vector<bool> visited(4, false);
-        int go_right_up = 0;
-
-        //The solution I though is search the farest node known at the right, left and bottom
-
-        while(areAllVisited(visited)){
-
-            //right 
-            if(!visited[0] && labyrinth[kr][go_right_up] == '#'){
-                graph.addEdge(kr,go_right_up--);
-                visited[0] = true;
-            }
-
-            if(!visited[1] && labyrinth[kr][go_right_up] == '#'){
-                graph.addEdge(kr,go_right_up--);
-                visited[1] = true;
-            }
-
-            if(!visited[0] && labyrinth[kr][go_right_up] == '#'){
-                graph.addEdge(kr,go_right_up--);
-                visited[0] = true;
-            }
-
-            if(!visited[0] && labyrinth[kr][go_right_up] == '#'){
-                graph.addEdge(kr,go_right_up--);
-                visited[0] = true;
-            }
-            
-        }
         
-        cout << "RIGHT" << endl; // Rick's next move (UP DOWN LEFT or RIGHT).
+        for (int i = 0; i < r; i++) {
+            // C of the characters in '#.TC?' (i.e. one line of the ASCII maze).
+            cin >> map[i]; cin.ignore();
+        }
+
+        if(tPosition.row == -1) tPosition = {kr, kc};
+
+        
+        queue<Position> frontier;
+        Position current;
+        vector<vector<bool>> visited(r, vector<bool>(c, false));
+        vector<vector<Position>> father(r, vector<Position>(c, {-1,-1}));
+        
+        Position start = {kr, kc};    
+        frontier.push({kr,kc});
+        visited[kr][kc] = true;  // La casilla en la que estamos es la visitada
+        
+        while(!frontier.empty())
+        {
+            current = frontier.front();
+            frontier.pop();
+            int kc = current.column;
+            int kr = current.row;
+
+            //Comprobamos si hay algún ? cercano
+            bool isUnknown =
+                (kc + 1 < c && map[kr][kc+1] == '?') ||
+                (kc - 1 >= 0 && map[kr][kc-1] == '?') ||
+                (kr + 1 < r && map[kr + 1][kc] == '?') ||
+                (kr - 1 >= 0 && map[kr-1][kc] == '?');
+
+            //We check if there is a cell containing the bomb.
+            bool isTheGoal =
+                (kc + 1 < c && map[kr][kc+1] == 'C') ||
+                (kc - 1 >= 0 && map[kr][kc-1] == 'C') ||
+                (kr + 1 < r && map[kr + 1][kc] == 'C') ||
+                (kr - 1 >= 0 && map[kr-1][kc] == 'C');
+            
+
+            
+                
+
+            //Seguimos explorando.
+            bool right = (kc+1 < c && map[kr][kc+1]=='.' && !visited[kr][kc+1]);
+            bool down = (kr+1 < r && map[kr+1][kc]=='.' && !visited[kr+1][kc]);
+            bool up = (kr-1 >= 0 && map[kr-1][kc]=='.' && !visited[kr-1][kc]);
+            bool left = (kc-1 >= 0 && map[kr][kc-1]=='.' && !visited[kr][kc-1]);
+
+
+            //Algoritmo BFS
+            if(right)
+            {
+                visited[kr][kc+1]= true;
+                frontier.push({kr,kc+1});
+                father[kr][kc+1] = current;
+            }
+            if(left)
+            {
+                visited[kr][kc-1]=true;
+                frontier.push({kr, kc-1});
+                father[kr][kc-1] = current;
+            }
+            if(down)
+            {
+                visited[kr+1][kc]= true;
+                frontier.push({kr+1,kc});
+                father[kr+1][kc] = current;
+            }
+            if(up)
+            {
+                visited[kr-1][kc]= true;
+                frontier.push({kr-1, kc});
+                father[kr-1][kc] = current;
+            }
+        
+        }
+
+        std::cout << move << endl; 
     }
 }
